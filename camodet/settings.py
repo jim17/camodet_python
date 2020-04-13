@@ -1,0 +1,19 @@
+
+input_source ="";
+output_name ="cam"
+record_video = False
+cam_name =""
+show_input = False
+seconds_after = 5
+counter_start = 0
+debug = 0
+area = 600
+noise = 21
+fps = 5
+frames_trigger = 5
+timestamp = False
+mask_template = False
+mask_file = ""
+command = ""
+draw_contours = True
+max_width = 640
