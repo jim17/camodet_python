@@ -3,11 +3,15 @@ import cv2
 import time
 
 try:
-    from camodet import settings
+    from camodet.settings import Settings
 except:
-    import settings
+    from settings import Settings
 
 def main():
+    # Load Settings
+    settings = Settings()
+    settings.load_from_args()
+
     # Print OpenCv version
     print ("OpenCv version: %s" % cv2.__version__)
 
@@ -127,7 +131,6 @@ def main():
         #cv2.putText(frame,'Time =12:00:01', bottomLeftCornerOfText, font, fontScale, fontColor, lineType)
 
         # Display the resulting frame
-        continue
         cv2.imshow('frame',frame)
         cv2.imshow('frame2',frame2)
         cv2.imshow('frame3',frame3)
