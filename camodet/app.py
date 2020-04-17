@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import time
+import sys
 
 try:
     from camodet.settings import Settings
@@ -10,7 +11,9 @@ except:
 def main():
     # Load Settings
     settings = Settings()
-    settings.load_from_args()
+    ret = settings.load_from_args(sys.argv[1:])
+    if(ret != 0):
+        sys.exit(ret)
 
     # Print OpenCv version
     print ("OpenCv version: %s" % cv2.__version__)
@@ -87,7 +90,7 @@ def main():
         
         if(settings.draw_contours):
             frame7 = np.zeros(frame6.shape)
-            frame7 = cv2.drawContours(frame7, contours, -1, (255,255,255), 3)
+            frame7 = cv2.drawContours(frame, contours, -1, (255,255,255), 3)
 
         # Loop contours, compute frames motion
         frames_motion = 0
@@ -130,18 +133,26 @@ def main():
         # Our operations on the frame come here
         #cv2.putText(frame,'Time =12:00:01', bottomLeftCornerOfText, font, fontScale, fontColor, lineType)
 
-        # Display the resulting frame
-        cv2.imshow('frame',frame)
-        cv2.imshow('frame2',frame2)
-        cv2.imshow('frame3',frame3)
-        cv2.imshow('frame4',frame4)
-        cv2.imshow('frame5',frame5)
-        cv2.imshow('frame6',frame6)
-        if settings.draw_contours:
-            cv2.imshow('frame7',frame7)
+        # Input Frame
+        if( settings.show_input ):
+            cv2.imshow('Input',frame)
+
+        # Display the debug frame
+        frame_display = {
+            1 : frame3, # Nose reduction
+            2 : frame4, # Frame diff
+            3 : frame5, # Threshold
+            4 : frame6, # Dilated
+        }
+        if( settings.debug in frame_display.keys() ):
+            cv2.imshow('Debug', frame_display[settings.debug])
+
+        # Draw contours 
+        if( settings.draw_contours ):
+            cv2.imshow('Contours',frame7)
         
         # Wait 1ms
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        if( (cv2.waitKey(1) & 0xFF) == ord('q') ):
             break
 
     # When everything done, release the capture

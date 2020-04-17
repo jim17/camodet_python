@@ -1,3 +1,5 @@
+import getopt
+
 """ Class to store settings configuration """
 class Settings():
     def __init__(self):
@@ -17,11 +19,75 @@ class Settings():
         self.mask_template = False
         self.mask_file = ""
         self.command = ""
-        self.draw_contours = True
+        self.draw_contours = False
         self.max_width = 640
     
-    def load_from_args(self, argc=0, *argv):
-        pass
+    def load_from_args(self, argv):
+        optlist, args = getopt.getopt(argv, "i:o:sa:c:d:ht:n:l:Dgm:f:k:x:CM:r")
+
+        # Do not print help if it's not requested
+        if(optlist != []):
+            print_usage = False
+        else:
+            print_usage = True
+        
+        for o, arg in optlist:
+            if o in "-i":
+                self.input_source = arg
+            elif o in "-o":
+                self.output_name = arg
+            elif o in "-s":
+                self.show_input = True              
+            elif o in "-a":
+                self.seconds_after = int(arg)
+            elif o in "-c":
+                self.counter_start = int(arg)
+            elif o in "-d":
+                self.debug = int(arg)
+            elif o in "-h":
+                print_usage = True
+            elif o in "-t":
+                self.area = int(arg)
+            elif o in "-n":
+                self.noise = int(arg)
+            elif o in "-l":
+                self.cam_name = arg
+            elif o in "-D":
+                self.timestamp = True
+            elif o in "-g":
+                self.mask_template = True
+            elif o in "-m":
+                self.mask_file = arg
+            elif o in "-f":
+                self.fps = int(arg)
+            elif o in "-k":
+                self.frames_trigger = int(arg)
+            elif o in "-x":
+                self.command = arg
+            elif o in "-C":
+                self.draw_contours = True
+            elif o in "-M":
+                self.max_width = int(arg)
+            else:
+                print_usage = True
+
+        # Frame display
+        if(self.debug > 4):
+            print("Error: debug step doesn't correspond to a valid number.")
+            print_usage = True
+
+        # Odd Gaussian matrix size
+        if((self.noise % 2) == 0):
+            self.noise = self.noise + 1
+
+        # If print_usage return error code
+        if(print_usage):
+            self.print_usage()
+            return 1
+
+        # Exit OK
+        return 0
+        
     
     def print_usage(self):
         print("Usage: python -m camodet [options]")
