@@ -8,6 +8,57 @@ try:
 except:
     from settings import Settings
 
+
+class createMask():
+    def __init__(self, cap):
+        hasframes, frame = cap.read()
+        cv2.namedWindow('ROI creation',cv2.WINDOW_NORMAL)
+        cv2.setMouseCallback('ROI creation', self.drawMask)
+        self.rectangles = []
+        self.currentRectangle = []
+
+        while(True):
+            # ROI mask
+            frame_mask = frame.copy()
+            roi_mask = np.full(frame.shape, 255, dtype="uint8")
+
+            # Draw rectangle around ROI
+            for rectangle in self.rectangles:
+                cv2.rectangle(frame_mask, rectangle[0], rectangle[1], (0,255,0), 2)
+                cv2.rectangle(roi_mask, rectangle[0], rectangle[1], (0,0,0), cv2.FILLED)
+
+            #frame_mask = cv2.add(frame, roi_mask)
+            cv2.imshow('ROI creation', frame_mask)
+            cv2.imshow("output img", roi_mask)
+
+            # Wait 1ms
+            if( (cv2.waitKey(1) & 0xFF) == ord('q') ):
+                break
+
+        # Save it as image
+        if(self.rectangles != []):
+            roi_mask = cv2.cvtColor(roi_mask, cv2.COLOR_BGR2GRAY)
+            cv2.imwrite('roi_mask.png', roi_mask)
+
+        # Write last mask into archive
+        sys.exit(0)
+
+    def drawMask(self, event, x, y, flags, param):
+        # Record starting (x,y) coordinates on left mouse button click
+        if event == cv2.EVENT_LBUTTONDOWN:
+            self.currentRectangle = [(x,y)]
+
+        # Record ending (x,y) coordintes on left mouse bottom release
+        elif event == cv2.EVENT_LBUTTONUP:
+            self.currentRectangle.append((x,y))
+            # Add to list
+            self.rectangles.append(self.currentRectangle)
+
+        # Right click to empty rectangles
+        elif event == cv2.EVENT_RBUTTONDOWN:
+            self.rectangles = []
+    
+
 def main():
     # Load Settings
     settings = Settings()
@@ -18,7 +69,25 @@ def main():
     # Print OpenCv version
     print ("OpenCv version: %s" % cv2.__version__)
 
-    cap = cv2.VideoCapture(0)
+    # Select Backend
+    backend_options = {
+        1 : cv2.CAP_FFMPEG,
+        2 : cv2.CAP_DSHOW
+    }
+    if( settings.backend in backend_options.keys() ):
+        backend = backend_options[settings.backend]
+    else:
+        backend = cv2.CAP_ANY
+
+    # Select video input
+    if(settings.input_source != ""):
+        cap = cv2.VideoCapture(settings.input_source, backend)
+    else:
+        cap = cv2.VideoCapture(0, backend)
+
+    # Check if camera is opened
+    if not cap.isOpened():
+        raise IOError("Cannot open the selected video/camera")
 
     # Limit video fps
     cap.set(cv2.CAP_PROP_FPS,settings.fps)
@@ -27,20 +96,21 @@ def main():
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     print ("Video Height {0} Width {1}".format(height, width))
 
-    # Overlay Text Settings
-    font                   = cv2.FONT_HERSHEY_SIMPLEX
-    bottomLeftCornerOfText = (15,height-15)
-    fontScale              = 1
-    fontColor              = (0,255,255)
-    lineType               = 2
-
     # Init values
     started = False
     do_mask = False
     motion = False
     record = False
+    counter = settings.counter_start
     element = cv2.getStructuringElement( cv2.MORPH_RECT, (7,7) )
     codec = cv2.VideoWriter_fourcc(*'XVID')
+
+    tframe0 = time.time()
+    tframe1 = tframe0
+    fps = 0
+
+    if(settings.mask_template):
+        createMask(cap)
 
     # Infinite Loop
     while(True):
@@ -55,6 +125,24 @@ def main():
         # All black
         elif(np.sum(frame) == 0):
             continue
+
+        # Compute frames per second
+        tframe1 = time.time()
+        deltaT = tframe1 - tframe0
+        if(deltaT > 0):
+            fps = 1/(deltaT)
+        else:
+            continue
+
+        # Skip frame if input stream go faster
+        if(int(fps) > settings.fps):
+            continue
+
+        # Store last time stamp only if processed
+        tframe0 = tframe1
+
+        # Standarize frame
+        # frame = cv2.resize(frame, (640,420))
 
         # Resize frame
         pyr1 = frame.copy()
@@ -90,7 +178,7 @@ def main():
         
         if(settings.draw_contours):
             frame7 = np.zeros(frame6.shape)
-            frame7 = cv2.drawContours(frame, contours, -1, (255,255,255), 3)
+            frame7 = cv2.drawContours(frame7, contours, -1, (255,255,255), 3)
 
         # Loop contours, compute frames motion
         frames_motion = 0
@@ -108,13 +196,14 @@ def main():
 
         # Record Actions
         if( (motion) and (not record) ):
-            print("Recording...")
             record = True
             tstart = time.time()
             tend = time.time() + settings.seconds_after
-            name = settings.output_name+time.strftime("%Y-%m-%d-%H%M%S")+'.avi'
+            name = settings.output_name + str(counter) + '.avi'
+            counter = counter + 1            
+            print("Recording...", name)
             if(settings.record_video):
-                output = cv2.VideoWriter(name, codec, settings.fps, (640,480))
+                output = cv2.VideoWriter(name, cv2.CAP_FFMPEG, codec, settings.fps, frame.shape[:2])
         # Motion stopped while recording
         elif( (motion) and (record) ):
             tend = time.time() + settings.seconds_after
@@ -127,15 +216,19 @@ def main():
             if(settings.record_video):
                 output.release()
         
-        if(record and settings.record_video):
-            output.write(frame)
-
         # Our operations on the frame come here
-        #cv2.putText(frame,'Time =12:00:01', bottomLeftCornerOfText, font, fontScale, fontColor, lineType)
+        if( settings.cam_name != "" ):
+            cv2.putText(frame, settings.cam_name, (5, 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
+        
+        if( settings.timestamp ):
+            # Overlay Text Settings
+            text = time.strftime("%Y-%m-%d-%H:%M:%S") + " fps:%0.1f" % (fps)
+            cv2.putText(frame, text, (5,frame.shape[0]-5), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
 
         # Input Frame
         if( settings.show_input ):
-            cv2.imshow('Input',frame)
+            cv2.namedWindow('Input',cv2.WINDOW_NORMAL)
+            cv2.imshow('Input', frame)
 
         # Display the debug frame
         frame_display = {
@@ -145,11 +238,17 @@ def main():
             4 : frame6, # Dilated
         }
         if( settings.debug in frame_display.keys() ):
+            cv2.namedWindow('Debug',cv2.WINDOW_NORMAL)
             cv2.imshow('Debug', frame_display[settings.debug])
 
         # Draw contours 
         if( settings.draw_contours ):
+            cv2.namedWindow('Contours',cv2.WINDOW_NORMAL)
             cv2.imshow('Contours',frame7)
+
+        # Write image
+        if(record and settings.record_video):
+            output.write(frame)
         
         # Wait 1ms
         if( (cv2.waitKey(1) & 0xFF) == ord('q') ):

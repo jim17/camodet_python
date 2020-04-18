@@ -21,16 +21,14 @@ class Settings():
         self.command = ""
         self.draw_contours = False
         self.max_width = 640
+        self.backend = 0
     
     def load_from_args(self, argv):
-        optlist, args = getopt.getopt(argv, "i:o:sa:c:d:ht:n:l:Dgm:f:k:x:CM:r")
+        optlist, args = getopt.getopt(argv, "i:o:sa:b:c:d:ht:n:l:Dgm:f:k:x:CM:r")
 
         # Do not print help if it's not requested
-        if(optlist != []):
-            print_usage = False
-        else:
-            print_usage = True
-        
+        print_usage = False
+                
         for o, arg in optlist:
             if o in "-i":
                 self.input_source = arg
@@ -40,6 +38,8 @@ class Settings():
                 self.show_input = True              
             elif o in "-a":
                 self.seconds_after = int(arg)
+            elif o in "-b":
+                self.backend = int(arg)
             elif o in "-c":
                 self.counter_start = int(arg)
             elif o in "-d":
@@ -68,12 +68,19 @@ class Settings():
                 self.draw_contours = True
             elif o in "-M":
                 self.max_width = int(arg)
+            elif o in "-r":
+                self.record_video = True
             else:
                 print_usage = True
 
         # Frame display
         if(self.debug > 4):
             print("Error: debug step doesn't correspond to a valid number.")
+            print_usage = True
+
+        # Backend selection
+        if(self.backend > 2):
+            print("Error: not valid backend number")
             print_usage = True
 
         # Odd Gaussian matrix size
@@ -97,6 +104,8 @@ class Settings():
         print("    -o output_name: The name for the output recordings.")
         print("                    A number and extension will be automatically added after it:")
         print("                      e.g. output_name23.avi")
+        print("    -b number:      Selects backend of OpenCv VideoCaptureAPI")
+        print("                    0 Auto | 1 FFMPEG | 2 DirectShow (videoInput)")
         print("    -s:             Open window showing the input video.")
         print("    -D:             Date and time labelled to video.")
         print("    -a seconds:     Seconds to record after the motion has stopped.")
@@ -112,4 +121,4 @@ class Settings():
         print("    -x command:     Command to be executed when motion is detected.")
         print("    -M number:      Max width of frame to be processed for motion detection, if input is larger it will be downsized to this value. (Default 640).")
         print("    -d number:      Show intermediate images in a debug window. Number can be:")
-        print("                    1: noise reduction | 2: frames difference | 3: threshold | 4:dilated(final).")
+        print("                    0: None | 1: noise reduction | 2: frames difference | 3: threshold | 4:dilated(final).")
