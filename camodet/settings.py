@@ -5,7 +5,7 @@ class Settings():
     def __init__(self):
         self.input_source ="";
         self.output_name ="cam"
-        self.record_video = False # Added from original script
+        self.record_video = True # Added from original script
         self.cam_name =""
         self.show_input = False
         self.seconds_after = 5
@@ -69,7 +69,7 @@ class Settings():
             elif o in "-M":
                 self.max_width = int(arg)
             elif o in "-r":
-                self.record_video = True
+                self.record_video = False
             else:
                 print_usage = True
 
@@ -122,3 +122,4 @@ class Settings():
         print("    -M number:      Max width of frame to be processed for motion detection, if input is larger it will be downsized to this value. (Default 640).")
         print("    -d number:      Show intermediate images in a debug window. Number can be:")
         print("                    0: None | 1: noise reduction | 2: frames difference | 3: threshold | 4:dilated(final).")
+        print("    -r              Skip Record into a file to avoid loading HDD during debug.")

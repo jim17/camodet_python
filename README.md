@@ -44,25 +44,32 @@ To get a list with a description of all parameters use the -h flag:
 ```
 $ python -m camodet -h
 
-Usage: camodet [options]
+Usage: python -m camodet [options]
 Options:
     -h              Print this help message.
     -i input_video: The source for motion detection.
     -o output_name: The name for the output recordings.
                     A number and extension will be automatically added after it:
                       e.g. output_name23.avi
+    -b number:      Selects backend of OpenCv VideoCaptureAPI
+                    0 Auto | 1 FFMPEG | 2 DirectShow (videoInput)
     -s:             Open window showing the input video.
     -D:             Date and time labelled to video.
     -a seconds:     Seconds to record after the motion has stopped.
     -c number:      Counter number to skip using in the output name (Default 0).
-    -g              Generate template image for ROI mask.
+    -g              Interactive ROI mask generation (saved as roi_mask.png)
     -l cam_name:    Label camera name on video.
-    -m mask_image:  Mask image to use for ROI motion detection. Black areas are ignored, White areas checked.                                                                                                     
+    -m mask_image:  Mask image to use for ROI motion detection. Black areas are ignored, White areas checked.
     -t number:      Threshold area (sqare pixels) to trigger detection.
                     Movements below this area are ignored (Default 600).
     -n number:      Noise reduction level (Default 21).
+    -f number:      FPS to process from input source (Default 5).
+    -k number:      Number of consecutive frames with motion to trigger motion event (Default 2).
+    -x command:     Command to be executed when motion is detected.
+    -M number:      Max width of frame to be processed for motion detection, if input is larger it will be downsized to this value. (Default 640).
     -d number:      Show intermediate images in a debug window. Number can be:
-                    1: noise reduction | 2: frames difference | 3: threshold | 4:dilated(final)
+                    0: None | 1: noise reduction | 2: frames difference | 3: threshold | 4:dilated(final).
+    -r              Skip Record into a file to avoid loading HDD during debug.
 ```
 
 ### Basic usage
@@ -145,5 +152,5 @@ The number after -d will tell camodet wich motion detection step to show.
  3) Start camodet using this mask image:
  
   ```
-  $ python -m camodet -s -i http://camera1.mairie-brest.fr/mjpg/video.mjpg?resolution=640x480 -n 3 -D -l "Camera1" -m mask.png
+  $ python -m camodet -s -i http://camera1.mairie-brest.fr/mjpg/video.mjpg?resolution=640x480 -n 3 -D -l "Camera1" -m roi_mask.png
  ```
