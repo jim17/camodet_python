@@ -173,16 +173,11 @@ def main():
             fps = 1/(deltaT)
         else:
             continue
-
         # Skip frame if input stream go faster
         if(int(fps) > settings.fps):
             continue
-
         # Store last time stamp only if processed
         tframe0 = tframe1
-
-        # Standarize frame
-        # frame = cv2.resize(frame, (640,420))
 
         # Resize frame
         pyr1 = frame.copy()
@@ -194,7 +189,7 @@ def main():
         frame3 = cv2.GaussianBlur(frame2, (settings.noise, settings.noise), 5, 5)
 
         # Force no difference on first iteration
-        if( not started):
+        if( not started ):
             frame3_prev = frame3.copy()
             started = True
 
@@ -205,7 +200,7 @@ def main():
         ret, frame5 = cv2.threshold(frame4, 15, 255, cv2.THRESH_BINARY)
 
         # Discard changes annotated in the binary mask
-        if(do_mask):
+        if( do_mask ):
             frame5 = cv2.bitwise_and(bin_mask, frame5)
 
         # Dilate image
@@ -216,10 +211,6 @@ def main():
         # This is used to discard small objects
         contours, hierarchy = cv2.findContours(frame6, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        if(settings.draw_contours):
-            frame7 = np.zeros(frame6.shape)
-            frame7 = cv2.drawContours(frame7, contours, -1, (255,255,255), 3)
-
         # Loop contours, compute frames motion
         frames_motion = 0
         for c in contours:
@@ -229,7 +220,7 @@ def main():
             frames_motion+=1
 
         # Check number of frames in movement
-        if (frames_motion >= settings.frames_trigger):
+        if ( frames_motion >= settings.frames_trigger ):
             motion = True
         else:
             motion = False
@@ -242,11 +233,11 @@ def main():
             name = settings.output_name + str(counter) + '.avi'
             counter = counter + 1
             print("Recording...", name)
-            if(settings.record_video):
+            if( settings.record_video ):
                 output = cv2.VideoWriter(name, cv2.CAP_FFMPEG, codec, settings.fps, frame.shape[:2])
 
             # Execute command on start record
-            if(settings.command != ""):
+            if( settings.command != "" ):
                 print("Executing command: ", settings.command)
                 results = subprocess.Popen(settings.command.split(" "), close_fds=True, creationflags=subprocess.DETACHED_PROCESS)
 
@@ -263,6 +254,9 @@ def main():
                 output.release()
 
         # Our operations on the frame come here
+        if( settings.draw_contours ):
+            frame = cv2.drawContours(frame, contours, -1, (255,255,255), 2)
+        
         if( settings.cam_name != "" ):
             cv2.putText(frame, settings.cam_name, (5, 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
 
@@ -286,11 +280,6 @@ def main():
         if( settings.debug in frame_display.keys() ):
             cv2.namedWindow('Debug',cv2.WINDOW_NORMAL)
             cv2.imshow('Debug', frame_display[settings.debug])
-
-        # Draw contours
-        if( settings.draw_contours ):
-            cv2.namedWindow('Contours',cv2.WINDOW_NORMAL)
-            cv2.imshow('Contours',frame7)
 
         # Write image
         if(record and settings.record_video):
