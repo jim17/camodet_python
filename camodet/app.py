@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import time
 import sys
+import subprocess
 
 try:
     from camodet.settings import Settings
@@ -50,7 +51,7 @@ class create_mask():
                   self.brush_size = int(key)
 
         # Save it as image
-        if(self.rectangles != []):
+        if(self.rectangles != [] or self.circles != []):
             roi_mask = cv2.cvtColor(roi_mask, cv2.COLOR_BGR2GRAY)
             cv2.imwrite('roi_mask.png', roi_mask)
 
@@ -84,7 +85,7 @@ class create_mask():
             # Draw circles on mouse move
             elif event == cv2.EVENT_MOUSEMOVE and self.draw:
                 self.circles.append([(x, y), self.brush_size*5])
-    
+
 
 def main():
     # Load Settings
@@ -149,13 +150,13 @@ def main():
             mask = cv2.pyrDown(mask)
 
         ret, bin_mask = cv2.threshold(mask, 15, 255, cv2.THRESH_BINARY)
-        
+
 
     # Infinite Loop
     while(True):
         # Capture frame-by-frame
         hasframes, frame = cap.read()
-        
+
         # None
         if(not hasframes):
             continue
@@ -200,21 +201,21 @@ def main():
         # Difference between this frame and the previous one
         frame4 = cv2.absdiff(frame3, frame3_prev)
         frame3_prev = frame3.copy()
-        
+
         ret, frame5 = cv2.threshold(frame4, 15, 255, cv2.THRESH_BINARY)
-        
+
         # Discard changes annotated in the binary mask
         if(do_mask):
             frame5 = cv2.bitwise_and(bin_mask, frame5)
-        
+
         # Dilate image
         frame6 = cv2.dilate(frame5, element, iterations=2)
-        
+
         # Find Contours
         # Countours are defined as the line joining all the points
         # This is used to discard small objects
         contours, hierarchy = cv2.findContours(frame6, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        
+
         if(settings.draw_contours):
             frame7 = np.zeros(frame6.shape)
             frame7 = cv2.drawContours(frame7, contours, -1, (255,255,255), 3)
@@ -226,7 +227,7 @@ def main():
                 frame_motion = 0
                 continue
             frames_motion+=1
-        
+
         # Check number of frames in movement
         if (frames_motion >= settings.frames_trigger):
             motion = True
@@ -239,10 +240,16 @@ def main():
             tstart = time.time()
             tend = time.time() + settings.seconds_after
             name = settings.output_name + str(counter) + '.avi'
-            counter = counter + 1            
+            counter = counter + 1
             print("Recording...", name)
             if(settings.record_video):
                 output = cv2.VideoWriter(name, cv2.CAP_FFMPEG, codec, settings.fps, frame.shape[:2])
+
+            # Execute command on start record
+            if(settings.command != ""):
+                print("Executing command: ", settings.command)
+                results = subprocess.Popen(settings.command.split(" "), close_fds=True, creationflags=subprocess.DETACHED_PROCESS)
+
         # Motion stopped while recording
         elif( (motion) and (record) ):
             tend = time.time() + settings.seconds_after
@@ -254,11 +261,11 @@ def main():
             # Close video writer
             if(settings.record_video):
                 output.release()
-        
+
         # Our operations on the frame come here
         if( settings.cam_name != "" ):
             cv2.putText(frame, settings.cam_name, (5, 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
-        
+
         if( settings.timestamp ):
             # Overlay Text Settings
             text = time.strftime("%Y-%m-%d-%H:%M:%S") + " fps:%0.1f" % (fps)
@@ -280,7 +287,7 @@ def main():
             cv2.namedWindow('Debug',cv2.WINDOW_NORMAL)
             cv2.imshow('Debug', frame_display[settings.debug])
 
-        # Draw contours 
+        # Draw contours
         if( settings.draw_contours ):
             cv2.namedWindow('Contours',cv2.WINDOW_NORMAL)
             cv2.imshow('Contours',frame7)
@@ -288,7 +295,7 @@ def main():
         # Write image
         if(record and settings.record_video):
             output.write(frame)
-        
+
         # Wait 1ms
         if( (cv2.waitKey(1) & 0xFF) == ord('q') ):
             break
