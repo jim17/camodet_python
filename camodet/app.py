@@ -9,13 +9,18 @@ except:
     from settings import Settings
 
 
-class createMask():
+class create_mask():
     def __init__(self, cap):
         hasframes, frame = cap.read()
-        cv2.namedWindow('ROI creation',cv2.WINDOW_NORMAL)
-        cv2.setMouseCallback('ROI creation', self.drawMask)
+        name = "ROI mask | (r)Rectangles (p)Paint (1-9)Brush size (left-click)Erase all (q)Exit and Save"
+        cv2.namedWindow(name,cv2.WINDOW_NORMAL)
+        cv2.setMouseCallback(name, self.draw_mask)
         self.rectangles = []
         self.currentRectangle = []
+        self.circles = []
+        self.draw = False
+        self.brush_size = 5
+        self.paint_option = 'paint'
 
         while(True):
             # ROI mask
@@ -24,16 +29,25 @@ class createMask():
 
             # Draw rectangle around ROI
             for rectangle in self.rectangles:
-                cv2.rectangle(frame_mask, rectangle[0], rectangle[1], (0,255,0), 2)
+                cv2.rectangle(frame_mask, rectangle[0], rectangle[1], (0,255,0), cv2.FILLED)
                 cv2.rectangle(roi_mask, rectangle[0], rectangle[1], (0,0,0), cv2.FILLED)
+            # Draw circles from Paint
+            for circle in self.circles:
+                cv2.circle(frame_mask, circle[0], circle[1], (0,255,0), cv2.FILLED)
+                cv2.circle(roi_mask, circle[0], circle[1], (0,0,0), cv2.FILLED)
 
-            #frame_mask = cv2.add(frame, roi_mask)
-            cv2.imshow('ROI creation', frame_mask)
-            cv2.imshow("output img", roi_mask)
+            cv2.imshow(name, frame_mask)
 
             # Wait 1ms
-            if( (cv2.waitKey(1) & 0xFF) == ord('q') ):
+            key = chr(cv2.waitKey(1) & 0xFF)
+            if( key == 'q' ):
                 break
+            elif( key == 'r' ):
+                  self.paint_option = 'rectangles'
+            elif( key == 'p' ):
+                  self.paint_option = 'paint'
+            elif( key in "123456789" ):
+                  self.brush_size = int(key)
 
         # Save it as image
         if(self.rectangles != []):
@@ -43,20 +57,33 @@ class createMask():
         # Write last mask into archive
         sys.exit(0)
 
-    def drawMask(self, event, x, y, flags, param):
-        # Record starting (x,y) coordinates on left mouse button click
-        if event == cv2.EVENT_LBUTTONDOWN:
-            self.currentRectangle = [(x,y)]
+    def draw_mask(self, event, x, y, flags, param):
+        if(self.paint_option == 'rectangles'):
+            # Record starting (x,y) coordinates on left mouse button click
+            if event == cv2.EVENT_LBUTTONDOWN:
+                self.currentRectangle = [(x,y)]
+            # Record ending (x,y) coordintes on left mouse bottom release
+            elif event == cv2.EVENT_LBUTTONUP:
+                self.currentRectangle.append((x,y))
+                # Add to list
+                self.rectangles.append(self.currentRectangle)
+            # Right click to empty rectangles
+            elif event == cv2.EVENT_RBUTTONDOWN:
+                self.rectangles = []
 
-        # Record ending (x,y) coordintes on left mouse bottom release
-        elif event == cv2.EVENT_LBUTTONUP:
-            self.currentRectangle.append((x,y))
-            # Add to list
-            self.rectangles.append(self.currentRectangle)
-
-        # Right click to empty rectangles
-        elif event == cv2.EVENT_RBUTTONDOWN:
-            self.rectangles = []
+        elif(self.paint_option == 'paint'):
+            # Record starting (x,y) coordinates on left mouse button click
+            if event == cv2.EVENT_LBUTTONDOWN:
+                self.draw = True
+            # Record ending (x,y) coordintes on left mouse bottom release
+            elif event == cv2.EVENT_LBUTTONUP:
+                self.draw = False
+            # Right click to empty circles
+            elif event == cv2.EVENT_RBUTTONDOWN:
+                self.circles = []
+            # Draw circles on mouse move
+            elif event == cv2.EVENT_MOUSEMOVE and self.draw:
+                self.circles.append([(x, y), self.brush_size*5])
     
 
 def main():
@@ -109,8 +136,20 @@ def main():
     tframe1 = tframe0
     fps = 0
 
-    if(settings.mask_template):
-        createMask(cap)
+    # Interactive ROI mask generation
+    if( settings.mask_template ):
+        create_mask(cap)
+
+    # Load the ROI mask image and binaryze
+    if( settings.mask_file != "" ):
+        do_mask = True
+        mask = cv2.imread(settings.mask_file, cv2.IMREAD_GRAYSCALE)
+        while(mask.shape[0] > settings.max_width):
+            # Downsampling to settings.max_width
+            mask = cv2.pyrDown(mask)
+
+        ret, bin_mask = cv2.threshold(mask, 15, 255, cv2.THRESH_BINARY)
+        
 
     # Infinite Loop
     while(True):

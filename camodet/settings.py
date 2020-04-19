@@ -21,7 +21,7 @@ class Settings():
         self.command = ""
         self.draw_contours = False
         self.max_width = 640
-        self.backend = 0
+        self.backend = 0 # Added from original script
     
     def load_from_args(self, argv):
         optlist, args = getopt.getopt(argv, "i:o:sa:b:c:d:ht:n:l:Dgm:f:k:x:CM:r")
@@ -110,7 +110,7 @@ class Settings():
         print("    -D:             Date and time labelled to video.")
         print("    -a seconds:     Seconds to record after the motion has stopped.")
         print("    -c number:      Counter number to skip using in the output name (Default 0).")
-        print("    -g              Generate template image for ROI mask.")
+        print("    -g              Interactive ROI mask generation (saved as roi_mask.png)")
         print("    -l cam_name:    Label camera name on video.")
         print("    -m mask_image:  Mask image to use for ROI motion detection. Black areas are ignored, White areas checked.")
         print("    -t number:      Threshold area (sqare pixels) to trigger detection.") 
