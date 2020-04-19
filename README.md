@@ -66,6 +66,7 @@ Options:
     -f number:      FPS to process from input source (Default 5).
     -k number:      Number of consecutive frames with motion to trigger motion event (Default 2).
     -x command:     Command to be executed when motion is detected.
+    -C              Draw Contours on current image
     -M number:      Max width of frame to be processed for motion detection, if input is larger it will be downsized to this value. (Default 640).
     -d number:      Show intermediate images in a debug window. Number can be:
                     0: None | 1: noise reduction | 2: frames difference | 3: threshold | 4:dilated(final).

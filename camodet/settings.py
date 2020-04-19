@@ -35,7 +35,7 @@ class Settings():
             elif o in "-o":
                 self.output_name = arg
             elif o in "-s":
-                self.show_input = True              
+                self.show_input = True
             elif o in "-a":
                 self.seconds_after = int(arg)
             elif o in "-b":
@@ -119,6 +119,7 @@ class Settings():
         print("    -f number:      FPS to process from input source (Default 5).")
         print("    -k number:      Number of consecutive frames with motion to trigger motion event (Default 2).")
         print("    -x command:     Command to be executed when motion is detected.")
+        print("    -C              Draw Contours on current image")
         print("    -M number:      Max width of frame to be processed for motion detection, if input is larger it will be downsized to this value. (Default 640).")
         print("    -d number:      Show intermediate images in a debug window. Number can be:")
         print("                    0: None | 1: noise reduction | 2: frames difference | 3: threshold | 4:dilated(final).")
