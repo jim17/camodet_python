@@ -20,7 +20,7 @@ setuptools.setup(
      packages=setuptools.find_packages(),
      install_requires=[
          "opencv-python==4.2.0.34",
-         "numpy==1.18.1",
+         "numpy==1.22.0",
      ],
      classifiers=[
          "Programming Language :: Python :: 3",
