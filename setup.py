@@ -19,7 +19,7 @@ setuptools.setup(
      url="https://github.com/jim17/camodet_python",
      packages=setuptools.find_packages(),
      install_requires=[
-         "opencv-python==4.2.0.34",
+         "opencv-python==4.8.1.78",
          "numpy==1.18.1",
      ],
      classifiers=[
